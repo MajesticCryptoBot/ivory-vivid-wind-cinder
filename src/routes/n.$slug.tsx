@@ -1,7 +1,7 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { TagBadge } from "@/components/tag-badge";
-import { formatTime } from "@/lib/news";
+import { formatTime, detectTag } from "@/lib/news";
 
 // Types for Telegram posts
 type TelegramPost = {
@@ -54,6 +54,9 @@ function ArticlePage() {
   const lines = post.text.split('\n');
   const headline = lines[0] || post.text.slice(0, 100);
   const body = lines.slice(1).join('\n') || post.text;
+  
+  // Detect the tag from the post text
+  const tag = detectTag(post.text);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
@@ -67,7 +70,7 @@ function ArticlePage() {
 
       <article className="mt-6 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
-          <TagBadge tag="NEW" />
+          <TagBadge tag={tag} />
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
             Telegram
           </span>
