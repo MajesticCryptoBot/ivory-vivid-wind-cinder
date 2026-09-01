@@ -90,9 +90,7 @@ function Home() {
           The brief behind the headline.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-muted">
-          Short Telegram captions stay on the wire. Open any story here for the
-          full desk note, key facts, and a shareable link you can append to the
-          forwarded message.
+          Alpha Signals Pro covers crypto, macro, and AI as it hits the tape. Headlines move first on Telegram. This desk holds the full brief.
         </p>
       </section>
 
@@ -154,22 +152,14 @@ function Home() {
         </div>
       )}
 
-      {/* "For the Telegram desk" section - UNCHANGED */}
+      {/* Public-facing information - intentionally concise */}
       <section id="desk" className="mt-16 rounded-lg border border-border bg-surface p-6 sm:p-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-          For the Telegram desk
+          About the desk
         </p>
-        <h2 className="mt-2 font-display text-2xl">How the link works</h2>
-        <ol className="mt-4 max-w-2xl space-y-3 text-sm leading-relaxed text-muted">
-          <li>1. Open the story on this site after the rewrite is forwarded.</li>
-          <li>2. Use Copy article link on the story page.</li>
-          <li>
-            3. Append that URL to the Telegram caption so readers can open the
-            full brief without leaving the channel thread.
-          </li>
-        </ol>
-        <p className="mt-4 font-mono text-xs text-subtle">
-          Example path · /n/telegram-12345
+        <h2 className="mt-2 font-display text-2xl">Alpha Signals Pro</h2>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
+          Independent market intelligence covering crypto, macro, AI, and the forces shaping digital markets. Follow the wire on Telegram for breaking updates, with this desk providing a permanent home for the latest reports.
         </p>
       </section>
     </main>
