@@ -6,7 +6,6 @@ import { ArticleCard } from "@/components/article-card";
 import { Input } from "@/components/ui/input";
 import { LiveWire, getArchivedTelegramPosts } from "@/components/live-wire";
 import { CATEGORIES, detectTag } from "@/lib/news";
-import { classifyTelegramCategory } from "@/lib/news-category";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -27,26 +26,32 @@ function Home() {
   // Get ALL archived posts (up to 12)
   const allArticles = useMemo(() => {
     const archivedPosts = getArchivedTelegramPosts();
-
+    
     return archivedPosts.map((post) => {
-      const lines = post.text.split("\n");
+      const lines = post.text.split('\n');
       const headline = lines[0] || post.text.slice(0, 100);
-      const dek = lines.slice(1).join("\n") || post.text;
-
-      // Classify the full Telegram post with deterministic topic rules.
-      // This replaces the previous loose substring checks that caused
-      // unrelated stories to appear under AI, Markets, etc.
+      const dek = lines.slice(1).join('\n') || post.text;
+      
+      // Detect the tag from the text (JUST IN, BREAKING, ALERT, NEW)
       const tag = detectTag(post.text);
-      const category = classifyTelegramCategory(post.text);
-
+      
+      let category = "Crypto";
+      if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
+        category = "AI";
+      } else if (post.text.toLowerCase().includes('stock') || post.text.toLowerCase().includes('market')) {
+        category = "Markets";
+      } else if (post.text.toLowerCase().includes('macro') || post.text.toLowerCase().includes('fed')) {
+        category = "Macro";
+      }
+      
       return {
         slug: `telegram-${post.id}`,
-        tag,
-        headline,
-        dek,
+        tag: tag, // Use detected tag instead of hardcoded "NEW"
+        headline: headline,
+        dek: dek,
         body: [post.text],
         tickers: [],
-        category,
+        category: category,
         publishedAt: post.publishedAt,
         related: [],
         keyFacts: [],
@@ -71,6 +76,7 @@ function Home() {
     });
   }, [q, cat, allArticles]);
 
+  // Show ALL posts, not just 3
   const [lead, ...rest] = filtered;
 
   return (
@@ -92,7 +98,7 @@ function Home() {
 
       <LiveWire />
 
-      {/* Search and filters - category filtering uses the same deterministic classifier as article metadata. */}
+      {/* Search and filters - UNCHANGED */}
       <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
@@ -123,6 +129,7 @@ function Home() {
         </div>
       </div>
 
+      {/* Show ALL posts in a grid */}
       {lead ? (
         <div className="mt-8 grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3">
@@ -138,6 +145,7 @@ function Home() {
         <p className="mt-12 text-sm text-muted">No stories match that filter.</p>
       )}
 
+      {/* Show MORE posts in a second row */}
       {rest.length > 2 && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rest.slice(2).map((a) => (
