@@ -379,3 +379,11 @@ export function formatTime(iso: string) {
 export function telegramCaption(article: Article) {
   return `${article.tag}: ${article.headline}`;
 }
+
+export function detectTag(text: string): NewsTag {
+  const upper = text.toUpperCase();
+  if (upper.includes('BREAKING')) return 'BREAKING';
+  if (upper.includes('ALERT')) return 'ALERT';
+  if (upper.includes('JUST IN') || upper.includes('JUST')) return 'JUST IN';
+  return 'NEW';
+}
