@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { Input } from "@/components/ui/input";
 import { LiveWire, getArchivedTelegramPosts } from "@/components/live-wire";
-import { CATEGORIES } from "@/lib/news";
+import { CATEGORIES, detectTag } from "@/lib/news";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -32,6 +32,9 @@ function Home() {
       const headline = lines[0] || post.text.slice(0, 100);
       const dek = lines.slice(1).join('\n') || post.text;
       
+      // Detect the tag from the text (JUST IN, BREAKING, ALERT, NEW)
+      const tag = detectTag(post.text);
+      
       let category = "Crypto";
       if (post.text.toLowerCase().includes('ai') || post.text.toLowerCase().includes('nvidia')) {
         category = "AI";
@@ -43,7 +46,7 @@ function Home() {
       
       return {
         slug: `telegram-${post.id}`,
-        tag: "NEW" as const,
+        tag: tag, // Use detected tag instead of hardcoded "NEW"
         headline: headline,
         dek: dek,
         body: [post.text],
@@ -151,17 +154,22 @@ function Home() {
         </div>
       )}
 
-      {/* Public-facing site information */}
+      {/* "For the Telegram desk" section - UNCHANGED */}
       <section id="desk" className="mt-16 rounded-lg border border-border bg-surface p-6 sm:p-8">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-          About the wire
+          For the Telegram desk
         </p>
-        <h2 className="mt-2 font-display text-2xl">Real-time market intelligence</h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
-          Alpha Signals Pro brings the latest market headlines, concise analysis,
-          and key facts together in one continuously updated briefing. Follow the
-          live wire for breaking developments, then explore the archive for the
-          stories that matter.
+        <h2 className="mt-2 font-display text-2xl">How the link works</h2>
+        <ol className="mt-4 max-w-2xl space-y-3 text-sm leading-relaxed text-muted">
+          <li>1. Open the story on this site after the rewrite is forwarded.</li>
+          <li>2. Use Copy article link on the story page.</li>
+          <li>
+            3. Append that URL to the Telegram caption so readers can open the
+            full brief without leaving the channel thread.
+          </li>
+        </ol>
+        <p className="mt-4 font-mono text-xs text-subtle">
+          Example path · /n/telegram-12345
         </p>
       </section>
     </main>
