@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CMC_ASSETS, parseCmcMarkets, type MarketQuote } from "@/lib/cmc-markets";
 
 const CACHE_TTL_MS = 180_000;
+const CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=60, s-maxage=180, stale-while-revalidate=120",
+  "CDN-Cache-Control": "public, s-maxage=180, stale-while-revalidate=120",
+};
 type CacheState = { expiresAt: number; data: MarketQuote[] };
 const globalRef = globalThis as typeof globalThis & { __cmcMarketCache__?: CacheState };
 
@@ -43,7 +47,7 @@ export const Route = createFileRoute("/api/market-prices")({
         if (cached && cached.expiresAt > now) {
           return Response.json(
             { data: cached.data, cached: true },
-            { headers: { "Cache-Control": "no-store" } },
+            { headers: CACHE_HEADERS },
           );
         }
 
@@ -52,19 +56,19 @@ export const Route = createFileRoute("/api/market-prices")({
           globalRef.__cmcMarketCache__ = { data, expiresAt: now + CACHE_TTL_MS };
           return Response.json(
             { data, cached: false },
-            { headers: { "Cache-Control": "no-store" } },
+            { headers: CACHE_HEADERS },
           );
         } catch (error) {
           console.error("[market-prices]", error instanceof Error ? error.message : error);
           if (cached) {
             return Response.json(
               { data: cached.data, cached: true, stale: true },
-              { headers: { "Cache-Control": "no-store" } },
+              { headers: CACHE_HEADERS },
             );
           }
           return Response.json(
             { error: error instanceof Error ? error.message : "Market data is temporarily unavailable" },
-            { status: 503 },
+            { status: 503, headers: CACHE_HEADERS },
           );
         }
       },
