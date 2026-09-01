@@ -1,26 +1,24 @@
-import { cva, type VariantProps } from "class-variance-authority";
+// src/components/ui/badge.tsx
 import { cn } from "@/lib/utils";
+import { forwardRef } from "react";
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]",
-  {
-    variants: {
-      tone: {
-        just: "bg-signal/15 text-signal",
-        breaking: "bg-signal/15 text-signal",
-        alert: "bg-warn/15 text-warn",
-        new: "bg-info/15 text-info",
-        mute: "bg-surface text-muted",
-      },
-    },
-    defaultVariants: { tone: "mute" },
-  },
+type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
+  tone?: "just" | "breaking" | "alert" | "new";
+};
+
+export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ className, tone, ...props }, ref) => {
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 
-export function Badge({
-  className,
-  tone,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement> & VariantProps<typeof badgeVariants>) {
-  return <span className={cn(badgeVariants({ tone, className }))} {...props} />;
-}
+Badge.displayName = "Badge";
