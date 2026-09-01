@@ -90,7 +90,9 @@ function Home() {
           The brief behind the headline.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-muted">
-          Alpha Signals Pro covers crypto, macro, and AI as it hits the tape. Headlines move first on Telegram. This desk holds the full brief.
+          Short Telegram captions stay on the wire. Open any story here for the
+          full desk note, key facts, and a shareable link you can append to the
+          forwarded message.
         </p>
       </section>
 
