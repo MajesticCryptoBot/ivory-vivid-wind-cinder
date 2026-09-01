@@ -85,7 +85,17 @@ function createNeonSql(): Promise<Sql> {
     types.setTypeParser(OID_DATE, identity);
     types.setTypeParser(OID_INTERVAL, identity);
 
-    const pool = new Pool(getNeonConnectionConfig());
+    // Keep the pool deliberately small for Vercel's serverless model. A large
+    // per-instance pg pool can multiply idle connections across concurrent
+    // function instances and unnecessarily pressure a small Neon project.
+    const pool = new Pool({
+      ...getNeonConnectionConfig(),
+      max: 2,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 5_000,
+      allowExitOnIdle: true,
+      keepAlive: true,
+    });
 
     return toSql(async <T>(text: string, params: unknown[]) => {
       const res = await pool.query(text, params);
