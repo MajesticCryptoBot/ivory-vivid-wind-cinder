@@ -32,9 +32,8 @@ function formatPrice(value: number) {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
 }
 
-// Store in localStorage for persistence
-const STORAGE_KEY = 'telegram_rolling_window';
-const MAX_ARCHIVED_POSTS = 12; // Changed from 5 to 12 (show more posts)
+const STORAGE_KEY = "telegram_rolling_window";
+const MAX_ARCHIVED_POSTS = 12;
 
 function loadArchivedPosts(): TelegramPost[] {
   try {
@@ -49,7 +48,7 @@ function saveArchivedPosts(posts: TelegramPost[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
   } catch {
-    // Ignore
+    // Ignore local storage quota/privacy failures.
   }
 }
 
@@ -62,58 +61,60 @@ export function LiveWire() {
 
   useEffect(() => {
     let active = true;
+
     const loadNews = async () => {
       try {
-        const response = await fetch("/api/news", { cache: "no-store" });
+        // The API is edge-cached for 30s. Do not bypass that cache from the browser.
+        const response = await fetch("/api/news");
         if (!response.ok) throw new Error("news request failed");
         const payload = (await response.json()) as { posts?: TelegramPost[] };
-        if (active) {
-          const allPosts = payload.posts ?? [];
-          setPosts(allPosts);
-          
-          if (allPosts.length > 0) {
-            const latestPost = allPosts[0];
-            const olderFromApi = allPosts.slice(1);
-            
-            const existingIds = new Set(archivedPosts.map(p => p.id));
-            let updatedArchive = [...archivedPosts];
+        if (!active) return;
+
+        const allPosts = payload.posts ?? [];
+        setPosts(allPosts);
+
+        if (allPosts.length > 0) {
+          const latestPost = allPosts[0];
+          const olderFromApi = allPosts.slice(1);
+
+          setArchivedPosts((current) => {
+            const existingIds = new Set(current.map((post) => post.id));
+            let updatedArchive = [...current];
+
             for (const post of olderFromApi) {
-              if (!existingIds.has(post.id)) {
-                updatedArchive.push(post);
-              }
+              if (!existingIds.has(post.id)) updatedArchive.push(post);
             }
-            
-            updatedArchive = updatedArchive.filter(p => p.id !== latestPost.id);
+
+            updatedArchive = updatedArchive.filter((post) => post.id !== latestPost.id);
             updatedArchive.sort(
-              (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+              (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
             );
-            // Keep up to 12 posts (rolling window)
             updatedArchive = updatedArchive.slice(0, MAX_ARCHIVED_POSTS);
-            
-            setArchivedPosts(updatedArchive);
+
             saveArchivedPosts(updatedArchive);
-          }
-          
-          setNewsError(false);
+            return updatedArchive;
+          });
         }
+
+        setNewsError(false);
       } catch {
         if (active) setNewsError(true);
       }
     };
 
     void loadNews();
-    const timer = window.setInterval(loadNews, 15_000);
+    const timer = window.setInterval(loadNews, 30_000);
     return () => {
       active = false;
       window.clearInterval(timer);
     };
-  }, [archivedPosts]);
+  }, []);
 
   useEffect(() => {
     let active = true;
     const loadMarkets = async () => {
       try {
-        const response = await fetch("/api/market-prices", { cache: "no-store" });
+        const response = await fetch("/api/market-prices");
         if (!response.ok) throw new Error("market request failed");
         const payload = (await response.json()) as { data?: Market[] };
         if (active) {
@@ -146,7 +147,7 @@ export function LiveWire() {
             </div>
             <p className="mt-1 text-xs text-muted">Latest post · @AlphaSignalsPro</p>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">15s refresh</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">30s refresh</span>
         </div>
 
         {newsError ? (
@@ -165,15 +166,13 @@ export function LiveWire() {
                 />
               </div>
             ) : null}
-            
+
             <h2 className="font-display text-2xl font-medium leading-snug text-foreground sm:text-3xl">
-              {latestPost.text.split('\n')[0] || latestPost.text.slice(0, 100)}
+              {latestPost.text.split("\n")[0] || latestPost.text.slice(0, 100)}
             </h2>
-            
-            <p className="mt-3 text-base leading-relaxed text-muted">
-              {latestPost.text}
-            </p>
-            
+
+            <p className="mt-3 text-base leading-relaxed text-muted">{latestPost.text}</p>
+
             <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-wide text-subtle">
               <span>{formatTime(latestPost.publishedAt)}</span>
               {latestPost.messageUrl ? (
@@ -225,7 +224,6 @@ export function LiveWire() {
   );
 }
 
-// Export function to get archived posts (rolling window)
 export function getArchivedTelegramPosts(): TelegramPost[] {
   return loadArchivedPosts();
 }
