@@ -53,8 +53,8 @@ function Markets() {
       </p>
       <h1 className="mt-3 font-display text-4xl font-medium">Markets</h1>
       <p className="mt-3 max-w-xl text-muted">
-        Live CoinMarketCap prices for BTC, ETH, XRP, SOL, and BNB. The server
-        caches the feed for three minutes so visitors share the same API request.
+        Stay current with the latest prices and 24-hour moves across the assets
+        followed by Alpha Signals Pro.
       </p>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-border">
@@ -91,7 +91,7 @@ function Markets() {
 
       {error && markets.length === 0 ? (
         <p className="mt-5 text-sm text-muted">
-          Live market data is unavailable. Configure CMC_API_KEY in Vercel.
+          Market data is temporarily unavailable. Please check back shortly.
         </p>
       ) : null}
     </main>
