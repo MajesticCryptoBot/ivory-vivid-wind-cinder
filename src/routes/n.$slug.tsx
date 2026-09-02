@@ -1,5 +1,6 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 import { TagBadge } from "@/components/tag-badge";
 import { formatTime, detectTag } from "@/lib/news";
 
@@ -12,13 +13,16 @@ type TelegramPost = {
   messageUrl: string | null;
 };
 
-// Helper to get Telegram post from localStorage
-function getTelegramPostById(id: number): TelegramPost | null {
+const STORAGE_KEY = "telegram_rolling_window";
+
+// Read the browser's rolling archive. This must only run in the browser;
+// route loaders can also run during SSR where localStorage does not exist.
+function getTelegramPostFromStorage(id: number): TelegramPost | null {
   try {
-    const stored = localStorage.getItem('telegram_rolling_window');
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
     const posts = JSON.parse(stored) as TelegramPost[];
-    return posts.find(p => p.id === id) || null;
+    return posts.find((post) => post.id === id) ?? null;
   } catch {
     return null;
   }
@@ -27,35 +31,108 @@ function getTelegramPostById(id: number): TelegramPost | null {
 export const Route = createFileRoute("/n/$slug")({
   component: ArticlePage,
   loader: ({ params }) => {
-    // Only handle Telegram posts
-    if (!params.slug.startsWith('telegram-')) {
-      throw notFound();
+    // Validate the URL shape in the loader, but do not try to read
+    // localStorage here. TanStack Router may execute this loader on the server.
+    if (!params.slug.startsWith("telegram-")) {
+      return { id: null };
     }
-    
-    const id = parseInt(params.slug.replace('telegram-', ''));
-    const post = getTelegramPostById(id);
-    if (!post) throw notFound();
-    return { post };
+
+    const id = Number(params.slug.replace("telegram-", ""));
+    return { id: Number.isFinite(id) ? id : null };
   },
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData
-          ? `${loaderData.post.text.slice(0, 60)}... · ASP`
-          : "Alpha Signals Pro",
+        title: "Alpha Signals Pro",
       },
     ],
   }),
 });
 
 function ArticlePage() {
-  const { post } = Route.useLoaderData();
-  
-  const lines = post.text.split('\n');
+  const { id } = Route.useLoaderData();
+  const [post, setPost] = useState<TelegramPost | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPost = async () => {
+      if (id === null) {
+        if (active) setLoading(false);
+        return;
+      }
+
+      // First use the locally cached archive. This keeps older stories
+      // available even though /api/news intentionally returns only recent posts.
+      const localPost = getTelegramPostFromStorage(id);
+      if (localPost) {
+        if (active) {
+          setPost(localPost);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Direct links may be opened without first visiting the homepage, so
+      // fall back to the public news API for the recent Telegram window.
+      try {
+        const response = await fetch("/api/news");
+        if (!response.ok) throw new Error("news request failed");
+        const payload = (await response.json()) as { posts?: TelegramPost[] };
+        const remotePost = (payload.posts ?? []).find((item) => item.id === id) ?? null;
+
+        if (active) {
+          setPost(remotePost);
+          setLoading(false);
+        }
+      } catch {
+        if (active) {
+          setPost(null);
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadPost();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <Link
+          to="/"
+          className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back to the wire
+        </Link>
+        <p className="mt-8 text-sm text-muted">Loading story…</p>
+      </main>
+    );
+  }
+
+  if (!post) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <Link
+          to="/"
+          className="inline-flex h-11 items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back to the wire
+        </Link>
+        <p className="mt-8 text-sm text-muted">This story is no longer available.</p>
+      </main>
+    );
+  }
+
+  const lines = post.text.split("\n");
   const headline = lines[0] || post.text.slice(0, 100);
-  const body = lines.slice(1).join('\n') || post.text;
-  
-  // Detect the tag from the post text
+  const body = lines.slice(1).join("\n") || post.text;
   const tag = detectTag(post.text);
 
   return (
@@ -95,7 +172,7 @@ function ArticlePage() {
         ) : null}
 
         <div className="mt-8 space-y-5 text-[17px] leading-7 text-foreground/92">
-          {body.split('\n').map((paragraph, index) => (
+          {body.split("\n").map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}
         </div>
